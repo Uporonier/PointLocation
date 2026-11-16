@@ -7,7 +7,7 @@ bash scripts/check-swift-source-size.sh
 mkdir -p build
 xcrun swiftc Waypoint/Models/SelectedCoordinate.swift Waypoint/Models/MapCoordinateCorrection.swift Tests/Coordinates/main.swift -o build/coordinate-checks
 build/coordinate-checks
-xcrun swiftc -parse-as-library Waypoint/Models/LocationRestoration.swift Waypoint/Models/LocationWriteGate.swift Tests/Restoration/RestorationChecks.swift -o build/restoration-checks
+xcrun swiftc -parse-as-library Waypoint/Models/LocationRestoration.swift Waypoint/Models/LocationWriteGate.swift Waypoint/Models/RecoveryLocationResult.swift Tests/Restoration/RestorationChecks.swift -o build/restoration-checks
 build/restoration-checks
 bash scripts/fetch-idevice.sh
 xcodegen generate

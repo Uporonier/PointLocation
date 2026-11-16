@@ -24,15 +24,17 @@ struct RestorationChecks {
         var calls: [String] = []
         try await LocationRestoration.clear(hasConnection: true, store: store,
             reconnect: { calls.append("connect") },
-            sendClear: { calls.append("clear") })
-        precondition(calls == ["clear"] && !store.isRequired)
+            sendClear: { calls.append("clear") },
+            disconnect: { calls.append("disconnect") })
+        precondition(calls == ["clear", "disconnect"] && store.isRequired)
 
         // After relaunch there is no retained connection or coordinate.
         calls = []
         try await LocationRestoration.clear(hasConnection: false, store: store,
             reconnect: { calls.append("connect") },
-            sendClear: { calls.append("clear") })
-        precondition(calls == ["connect", "clear"] && !store.isRequired)
+            sendClear: { calls.append("clear") },
+            disconnect: { calls.append("disconnect") })
+        precondition(calls == ["connect", "clear", "disconnect"] && store.isRequired)
 
         // A stale connection retries exactly once through a fresh tunnel.
         calls = []
@@ -43,36 +45,66 @@ struct RestorationChecks {
                 calls.append("clear")
                 clearCount += 1
                 if clearCount == 1 { throw ProbeError.disconnected }
-            })
-        precondition(calls == ["clear", "connect", "clear"] && !store.isRequired)
+            }, disconnect: { calls.append("disconnect") })
+        precondition(calls == ["clear", "connect", "clear", "disconnect"] && store.isRequired)
 
         calls = []
         do {
             try await LocationRestoration.clear(hasConnection: false, store: store,
                 reconnect: { calls.append("connect"); throw ProbeError.disconnected },
-                sendClear: { calls.append("clear") })
+                sendClear: { calls.append("clear") },
+                disconnect: { calls.append("disconnect") })
             fatalError("A failed reconnect must propagate")
         } catch ProbeError.disconnected {}
-        precondition(calls == ["connect"] && store.isRequired)
+        precondition(calls == ["connect", "disconnect"] && store.isRequired)
 
         calls = []
         do {
             try await LocationRestoration.clear(hasConnection: true, store: store,
                 reconnect: { calls.append("connect") },
-                sendClear: { calls.append("clear"); throw ProbeError.clearFailed })
+                sendClear: { calls.append("clear"); throw ProbeError.clearFailed },
+                disconnect: { calls.append("disconnect") })
             fatalError("A failed clear must preserve recovery state")
         } catch ProbeError.clearFailed {}
-        precondition(calls == ["clear", "connect", "clear"] && store.isRequired)
+        precondition(calls == ["clear", "connect", "clear", "disconnect"] && store.isRequired)
         precondition(LocationRecoveryStore(defaults: defaults).isRequired)
 
         calls = []
         do {
             try await LocationRestoration.clear(hasConnection: true, store: store,
                 reconnect: { calls.append("connect") },
-                sendClear: { calls.append("clear"); throw CancellationError() })
+                sendClear: { calls.append("clear"); throw CancellationError() },
+                disconnect: { calls.append("disconnect") })
             fatalError("Cancellation must not reconnect")
         } catch is CancellationError {}
-        precondition(calls == ["clear"] && store.isRequired)
+        precondition(calls == ["clear", "disconnect"] && store.isRequired)
+
+        // No success from an accepted clear, simulated fix, missing evidence or
+        // a denied/timed-out observation. Only the explicit observation clears it.
+        store.recordVerification(.stillSimulated)
+        precondition(store.isRequired)
+        store.recordVerification(.unavailable("Permission denied"))
+        precondition(store.isRequired)
+        store.recordVerification(.systemLocationObserved)
+        precondition(!store.isRequired)
+        precondition(!LocationRecoveryStore(defaults: defaults).isRequired)
+
+        let began = Date(timeIntervalSince1970: 1_000)
+        let now = began.addingTimeInterval(10)
+        func accepts(_ timestamp: Date, accuracy: Double = 10, simulated: Bool? = false) -> Bool {
+            RecoveryLocationSample.isSystemLocation(
+                timestamp: timestamp, since: began, now: now,
+                horizontalAccuracy: accuracy, isSimulated: simulated
+            )
+        }
+        precondition(accepts(now))
+        precondition(!accepts(began.addingTimeInterval(-1))) // pre-clear cache
+        precondition(!accepts(now.addingTimeInterval(-6)))  // stale callback
+        precondition(!accepts(now.addingTimeInterval(1)))   // future timestamp
+        precondition(!accepts(now, accuracy: -1))
+        precondition(!accepts(now, accuracy: .nan))
+        precondition(!accepts(now, simulated: true))
+        precondition(!accepts(now, simulated: nil))
 
         let gate = LocationWriteGate()
         let queuedBeforeRestore = try gate.ticket()
@@ -91,6 +123,6 @@ struct RestorationChecks {
             fatalError("An old write must stay invalid after a new simulation starts")
         } catch is CancellationError {}
         try gate.validate(gate.ticket())
-        print("Restoration checks passed: relaunch, legacy marker, retained/fresh/stale tunnel, failures, cancellation, stale writes.")
+        print("Restoration checks passed: relaunch, full disconnect on every clear outcome, pending until observed, cached/unknown/simulated fixes, cancellation, stale writes.")
     }
 }

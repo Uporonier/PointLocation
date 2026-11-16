@@ -16,6 +16,9 @@ struct WaypointApp: App {
                         model.applicationBecameActive()
                     } else {
                         model.applicationBecameInactive()
+                        if phase == .background {
+                            model.realLocationVerifier.cancel()
+                        }
                     }
                 }
         }

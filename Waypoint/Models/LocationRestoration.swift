@@ -1,6 +1,6 @@
 import Foundation
 
-/// This marker means a clear has not been acknowledged, not that GPS was verified.
+/// Keep recovery pending until a fresh, explicitly non-simulated fix is observed.
 struct LocationRecoveryStore {
     static let pendingKey = "locationRecoveryRequired"
     let defaults: UserDefaults
@@ -19,9 +19,13 @@ struct LocationRecoveryStore {
         defaults.set(true, forKey: Self.pendingKey)
     }
 
-    func acknowledgeClear() {
-        defaults.set(false, forKey: Self.pendingKey)
-        defaults.removeObject(forKey: "activeSimulationSessionID")
+    func recordVerification(_ result: RecoveryLocationResult) {
+        if result == .systemLocationObserved {
+            defaults.set(false, forKey: Self.pendingKey)
+            defaults.removeObject(forKey: "activeSimulationSessionID")
+        } else {
+            markRequired()
+        }
     }
 }
 
@@ -33,13 +37,31 @@ enum LocationRestoration {
         hasConnection: Bool,
         store: LocationRecoveryStore,
         reconnect: () async throws -> Void,
-        sendClear: () async throws -> Void
+        sendClear: () async throws -> Void,
+        disconnect: () async -> Void
     ) async throws {
         store.markRequired()
+        do {
+            try await sendClearWithRetry(
+                hasConnection: hasConnection, reconnect: reconnect, sendClear: sendClear
+            )
+        } catch {
+            await disconnect()
+            throw error
+        }
+        // Release the tunnel even when the clear returned success. A command
+        // response alone is not evidence of a new physical location fix.
+        await disconnect()
+    }
+
+    private static func sendClearWithRetry(
+        hasConnection: Bool,
+        reconnect: () async throws -> Void,
+        sendClear: () async throws -> Void
+    ) async throws {
         if hasConnection {
             do {
                 try await sendClear()
-                store.acknowledgeClear()
                 return
             } catch is CancellationError {
                 throw CancellationError()
@@ -51,6 +73,5 @@ enum LocationRestoration {
         try await reconnect()
         try Task.checkCancellation()
         try await sendClear()
-        store.acknowledgeClear()
     }
 }

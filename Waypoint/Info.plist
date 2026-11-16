@@ -85,7 +85,7 @@
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>位置模拟期间，使用低精度后台定位活动尝试保持连接，便于切换到其他 App。</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>使用低精度定位活动维持正在运行的位置模拟连接。</string>
+	<string>用于恢复后检查系统返回的新位置，以及维持正在运行的位置模拟连接。</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

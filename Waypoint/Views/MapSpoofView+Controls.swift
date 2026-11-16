@@ -61,9 +61,9 @@ extension MapSpoofView {
                 Task { await model.restoreRealLocation() }
             } label: {
                 HStack(spacing: 8) {
-                    if model.isStoppingSimulation {
+                    if model.isStoppingSimulation || model.isVerifyingLocation {
                         ProgressView()
-                        Text("正在恢复真实定位…")
+                        Text(model.isVerifyingLocation ? "正在检查系统位置…" : "正在恢复真实定位…")
                     } else {
                         Label("恢复真实定位", systemImage: "location.circle.fill")
                     }
@@ -75,10 +75,22 @@ extension MapSpoofView {
             .disabled(model.isChangingSimulation || model.isPreparing || model.isCellularLaunchRunning)
 
             if model.needsLocationRecovery && model.simulatedCoordinate == nil {
-                Label("模拟位置尚未确认清除，请恢复真实定位。", systemImage: "exclamationmark.circle")
+                Label("尚未确认恢复，请检查系统位置。", systemImage: "exclamationmark.circle")
                     .font(.footnote)
                     .foregroundStyle(.orange)
                     .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if model.simulatedCoordinate == nil {
+                HStack {
+                    Button("重新检查系统位置") {
+                        Task { await model.checkLocationRecovery() }
+                    }
+                    .disabled(model.isChangingSimulation || model.isPreparing || model.isCellularLaunchRunning)
+                    Spacer()
+                    NavigationLink("恢复帮助") { RecoveryGuideView() }
+                }
+                .font(.footnote)
             }
 
             if model.simulatedCoordinate == nil {

@@ -13,6 +13,8 @@ final class AppModel: ObservableObject {
     @Published var isChangingSimulation = false
     @Published var isStoppingSimulation = false
     @Published var needsLocationRecovery = false
+    @Published var isVerifyingLocation = false
+    @Published var recoveryResult: RecoveryLocationResult?
     @Published var simulationEvent: SimulationEvent?
     @Published var cellularHandoffState: CellularHandoffState = .idle
     @Published var cellularLaunchState: CellularLaunchState = .idle
@@ -42,6 +44,7 @@ final class AppModel: ObservableObject {
     // Implementation-only access is module-internal so responsibility extensions can share one state machine.
     let bridge = DeviceBridge()
     let recoveryStore = LocationRecoveryStore()
+    let realLocationVerifier = RealLocationVerifier()
     private let feedbackGenerator = UINotificationFeedbackGenerator()
     var resendTask: Task<Void, Never>?
     var cellularHandoffTask: Task<Void, Never>?

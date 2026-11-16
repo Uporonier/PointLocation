@@ -35,11 +35,11 @@ struct UsageGuideView: View {
             }
             Section("结束使用") {
                 Text("结束使用前，保持 LocalDevVPN 开启，点首页“恢复真实定位”。即使已关闭并重新打开 App，也可以使用此按钮；连接失效时请先连接 Wi-Fi。")
-                Text("收到恢复指令提示后，打开地图并点击当前位置按钮，等待重新定位；微信退出“发送位置”页面后重新进入。首页选点标记不是当前位置，不会随恢复操作消失。")
-                Text("直接关闭 App 或断开 VPN 不代表已恢复。恢复失败会保留提醒，可重新连接后再试；仍不成功时可重启 iPhone 再验证。")
+                Text("清除后会完整释放模拟连接，再检查系统是否返回新的、未标记为软件模拟的位置。检查期间请保持 App 在前台。首页选点标记不是当前位置。")
+                NavigationLink("地图、微信仍未恢复时的手动步骤") { RecoveryGuideView() }
             }
             Section("关于此版本") {
-                Text("0.1.4 · 选点版")
+                Text("0.1.5 · 选点版")
                 Text("基于 Waypoint 开源项目修改，保留 AGPL-3.0 许可证。主要界面为中文，底层诊断信息可能为英文。")
                     .font(.footnote)
                 Link("Waypoint 源项目与许可证", destination: URL(string: "https://github.com/raph559/WaypointApp")!)

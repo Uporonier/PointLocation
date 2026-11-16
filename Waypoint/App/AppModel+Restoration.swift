@@ -5,6 +5,7 @@ extension AppModel {
     func markLocationRecoveryRequired() {
         recoveryStore.markRequired()
         needsLocationRecovery = true
+        recoveryResult = nil
     }
 
     /// Available even after force-quit, with no in-memory simulation session.
@@ -45,19 +46,56 @@ extension AppModel {
                     self.invalidateConnectionReadiness()
                     try await self.prepareDeviceCore()
                 },
-                sendClear: { try await self.bridge.clearLocation() }
+                sendClear: { try await self.bridge.clearLocation() },
+                disconnect: {
+                    await self.bridge.disconnect()
+                    self.invalidateConnectionReadiness()
+                }
             )
-            publishSimulationEvent(.stopped)
-            alert = AppAlert(
-                title: "已发送恢复真实定位指令",
-                message: "模拟位置已请求清除。请打开地图，点击当前位置按钮等待重新定位；微信请退出“发送位置”页面后重新进入。\n\n本 App 尚未验证其他 App 的定位结果。首页地图上的选点标记仍会保留，它不是当前位置。"
-            )
+            await verifyLocationAfterDisconnect()
         } catch {
-            await bridge.disconnect()
-            invalidateConnectionReadiness()
             presentError(
                 title: "恢复未完成",
-                message: "模拟位置可能仍然保留。请连接 Wi-Fi、开启 LocalDevVPN，返回后再次点“恢复真实定位”；缺少配对文件时，请先在设置中导入本机文件。\n\n仍无法恢复时，可重启 iPhone 后在地图中重新定位。直接关闭定点或断开 VPN 不代表已清除模拟位置。\n\n\(error.localizedDescription)"
+                message: "连接已释放，但未确认清除。请连接 Wi-Fi、开启 LocalDevVPN 后重试；缺少配对文件时请先导入。\n\n仍停在旧位置时，请按首页“恢复帮助”关闭相关 App，再关闭并重新开启系统定位服务。\n\n\(error.localizedDescription)"
+            )
+        }
+    }
+
+    /// Read-only follow-up after the user manually toggles Location Services.
+    /// It must never reconnect the developer tunnel or send a simulated point.
+    func checkLocationRecovery() async {
+        guard simulatedCoordinate == nil, !isChangingSimulation, !isPreparing,
+              cellularLaunchOperationID == nil else { return }
+        isChangingSimulation = true
+        bridge.suspendLocationWrites()
+        BackgroundKeepAlive.shared.stop()
+        await bridge.disconnect()
+        invalidateConnectionReadiness()
+        await verifyLocationAfterDisconnect()
+        isChangingSimulation = false
+    }
+
+    private func verifyLocationAfterDisconnect() async {
+        isVerifyingLocation = true
+        UIApplication.shared.isIdleTimerDisabled = true
+        defer {
+            isVerifyingLocation = false
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
+        let result = await realLocationVerifier.check()
+        recoveryResult = result
+        recoveryStore.recordVerification(result)
+        needsLocationRecovery = recoveryStore.isRequired
+        if result == .systemLocationObserved {
+            publishSimulationEvent(.stopped)
+            alert = AppAlert(
+                title: "已收到新的系统定位",
+                message: "\(result.detail)\n\n若微信或地图仍停在旧位置，先从后台关闭它们，再重新打开。仍不变时请查看首页“恢复帮助”。定点首页选点标记不是当前位置。"
+            )
+        } else {
+            alert = AppAlert(
+                title: "尚未确认恢复",
+                message: "\(result.detail)\n\n本 App 的模拟连接已释放。若地图仍在旧位置：\n1. 从后台关闭微信、地图和定点。\n2. 设置 → 隐私与安全性 → 定位服务，关闭后重新开启。\n3. 先在地图确认当前位置，再打开微信。\n\n也可回到定点，点击“重新检查系统位置”。"
             )
         }
     }
