@@ -1,0 +1,9 @@
+build/
+*.xcodeproj/
+.DS_Store
+Vendor/idevice/libidevice_ffi.a
+*.mobiledevicepairing
+*.mobiledevicepair
+*.p12
+*.mobileprovision
+*.ipa

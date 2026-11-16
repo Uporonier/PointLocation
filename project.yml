@@ -1,0 +1,45 @@
+name: Waypoint
+
+options:
+  bundleIdPrefix: app.waypoint
+  deploymentTarget:
+    iOS: "17.4"
+  xcodeVersion: "26.0"
+
+settings:
+  base:
+    IPHONEOS_DEPLOYMENT_TARGET: "17.4"
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    TARGETED_DEVICE_FAMILY: "1,2"
+
+targets:
+  Waypoint:
+    type: application
+    platform: iOS
+    sources:
+      - path: Waypoint
+        excludes:
+          - Info.plist
+          - Waypoint.entitlements
+          - Assets.xcassets
+    settings:
+      base:
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: Waypoint/Waypoint.entitlements
+        CURRENT_PROJECT_VERSION: 1
+        DEVELOPMENT_TEAM: ""
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Waypoint/Info.plist
+        MARKETING_VERSION: "0.1.0"
+        PRODUCT_BUNDLE_IDENTIFIER: app.pinpoint.personal
+        PRODUCT_NAME: Waypoint
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        CLANG_ENABLE_MODULES: YES
+        HEADER_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/Vendor/idevice"
+        LIBRARY_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/Vendor/idevice"
+        OTHER_LDFLAGS: "$(inherited) -lidevice_ffi"
+        SWIFT_INCLUDE_PATHS: "$(inherited) $(PROJECT_DIR)/Vendor/idevice"
+    scheme:
+      gatherCoverageData: false
