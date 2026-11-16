@@ -7,3 +7,4 @@ Vendor/idevice/libidevice_ffi.a
 *.p12
 *.mobileprovision
 *.ipa
+!downloads/*.ipa

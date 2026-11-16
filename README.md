@@ -2,6 +2,8 @@
 
 原生 iPhone 选点定位工具，基于 [Waypoint](https://github.com/raph559/WaypointApp) 修改。
 
+0.1.1 将安装包和桌面名称改为英文 **Pinpoint**，避免部分 SideStore 版本将中文名称提交为 `appIdName` 后被 Apple 拒绝。App 内仍为中文界面。
+
 支持地图选点、拖动标记、地点搜索、启动/停止位置模拟。主要界面为中文，使用 SwiftUI 和 MapKit。此版本不含路线功能。
 
 ## 从 GitHub Actions 获取安装包
