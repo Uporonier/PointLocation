@@ -138,7 +138,8 @@ extension MapSpoofView {
         operation: @escaping @MainActor () async throws -> MKMapItem
     ) {
         searchTask?.cancel()
-        placeSearch.cancelAll()
+        // Keep the selected completion alive while its place is resolved.
+        // Cancel the previous task; firstMapItem cancels its network request.
 
         let operationID = UUID()
         searchOperationID = operationID
@@ -174,8 +175,11 @@ extension MapSpoofView {
                 searchText = item.name ?? fallbackName
                 placeSearch.clearSuggestions()
             } catch {
-                guard !Task.isCancelled else { return }
-                model.showError(title: "搜索失败", error: error)
+                guard !Task.isCancelled, searchOperationID == operationID else { return }
+                let status = model.simulatedCoordinate == nil
+                    ? ""
+                    : "\n\n当前仍在模拟之前的位置。要结束模拟，请关闭提示后点击“停止模拟”。"
+                model.presentError(title: "搜索失败", message: error.localizedDescription + status)
             }
         }
     }

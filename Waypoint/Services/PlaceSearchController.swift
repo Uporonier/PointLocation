@@ -22,7 +22,7 @@ final class PlaceSearchController: NSObject, ObservableObject {
     override init() {
         super.init()
         completer.delegate = self
-        completer.resultTypes = [.address, .pointOfInterest, .query]
+        completer.resultTypes = [.address, .pointOfInterest]
     }
 
     func update(query: String, region: MKCoordinateRegion) {
@@ -60,19 +60,52 @@ final class PlaceSearchController: NSObject, ObservableObject {
     }
 
     func resolve(_ suggestion: PlaceSuggestion, region: MKCoordinateRegion) async throws -> MKMapItem {
+        // A completion identifies a place already. Do not bias it toward the
+        // old simulated location (which may be on a different continent).
         let request = MKLocalSearch.Request(completion: suggestion.completion)
-        request.region = region
-        return try await firstMapItem(for: request)
+        do {
+            return try await firstMapItem(for: request)
+        } catch {
+            try Task.checkCancellation()
+            guard isNoResults(error) else { throw error }
+        }
+
+        // Some providers return suggestions whose place token no longer
+        // resolves. Retry their full address as text, without the old region.
+        let query = [suggestion.title, suggestion.subtitle]
+            .filter { !$0.isEmpty }.joined(separator: " ")
+        let fallback = MKLocalSearch.Request()
+        fallback.naturalLanguageQuery = query
+        fallback.resultTypes = [.address, .pointOfInterest]
+        return try await firstMapItem(for: fallback)
     }
 
     func resolve(query: String, region: MKCoordinateRegion) async throws -> MKMapItem {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = query
         request.region = region
-        return try await firstMapItem(for: request)
+        request.resultTypes = [.address, .pointOfInterest]
+        do {
+            return try await firstMapItem(for: request)
+        } catch {
+            try Task.checkCancellation()
+            guard isNoResults(error) else { throw error }
+        }
+        let fallback = MKLocalSearch.Request()
+        fallback.naturalLanguageQuery = query
+        fallback.resultTypes = [.address, .pointOfInterest]
+        return try await firstMapItem(for: fallback)
+    }
+
+    private func isNoResults(_ error: Error) -> Bool {
+        if case PlaceSearchError.noResults = error { return true }
+        let nsError = error as NSError
+        return nsError.domain == MKErrorDomain &&
+            nsError.code == Int(MKError.Code.placemarkNotFound.rawValue)
     }
 
     private func firstMapItem(for request: MKLocalSearch.Request) async throws -> MKMapItem {
+        try Task.checkCancellation()
         currentSearch?.cancel()
 
         let search = MKLocalSearch(request: request)
@@ -83,7 +116,14 @@ final class PlaceSearchController: NSObject, ObservableObject {
             }
         }
 
-        let response = try await search.start()
+        let response: MKLocalSearch.Response
+        do {
+            response = try await search.start()
+        } catch {
+            try Task.checkCancellation()
+            if isNoResults(error) { throw PlaceSearchError.noResults }
+            throw error
+        }
         try Task.checkCancellation()
 
         guard let item = response.mapItems.first else {
@@ -120,6 +160,6 @@ enum PlaceSearchError: LocalizedError {
     case noResults
 
     var errorDescription: String? {
-        "No matching place was found."
+        "地图服务未返回这个地点。请加上城市或校区名称后重试，例如“济南 山东大学 中心校区”；也可以退出搜索，在地图上放大并点选。原来的选点没有改变。"
     }
 }
