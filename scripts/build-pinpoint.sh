@@ -4,6 +4,9 @@ cd "$(dirname "$0")/.."
 command -v xcodebuild >/dev/null || { echo 'Requires macOS and Xcode 26 or newer.'; exit 1; }
 command -v xcodegen >/dev/null || { echo 'Install XcodeGen: brew install xcodegen'; exit 1; }
 bash scripts/check-swift-source-size.sh
+mkdir -p build
+xcrun swiftc Waypoint/Models/SelectedCoordinate.swift Waypoint/Models/MapCoordinateCorrection.swift Tests/Coordinates/main.swift -o build/coordinate-checks
+build/coordinate-checks
 bash scripts/fetch-idevice.sh
 xcodegen generate
 xcodebuild archive -project Waypoint.xcodeproj -scheme Waypoint \

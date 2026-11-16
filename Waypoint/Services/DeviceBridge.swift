@@ -39,6 +39,10 @@ final class DeviceBridge: @unchecked Sendable {
     }
 
     func setLocation(_ coordinate: SelectedCoordinate) async throws {
+        let deviceCoordinate = MapCoordinateCorrection.deviceCoordinate(
+            coordinate,
+            enabled: UserDefaults.standard.bool(forKey: MapCoordinateCorrection.preferenceKey)
+        )
         try await perform {
             guard coordinate.isValid else { throw DeviceBridgeError.invalidCoordinate }
             try self.requireTunnel()
@@ -48,7 +52,7 @@ final class DeviceBridge: @unchecked Sendable {
             }
             do {
                 try self.consume(
-                    location_simulation_set(locationClient, coordinate.latitude, coordinate.longitude),
+                    location_simulation_set(locationClient, deviceCoordinate.latitude, deviceCoordinate.longitude),
                     fallback: "The device rejected the simulated location."
                 )
             } catch {

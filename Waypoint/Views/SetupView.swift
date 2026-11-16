@@ -7,6 +7,7 @@ struct SetupView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isChoosingPairingFile = false
     @State private var isSideStoreConfirmationPresented = false
+    @AppStorage(MapCoordinateCorrection.preferenceKey) private var coordinateCorrection = false
 
     private let localDevVPNAppStoreURL = URL(string: "https://apps.apple.com/app/id6755608044")!
 
@@ -98,6 +99,16 @@ struct SetupView: View {
                 Text("通知")
             } footer: {
                 Text("无法确认模拟连接时提醒你。")
+            }
+
+            Section {
+                Toggle("大陆地图偏移修正", isOn: $coordinateCorrection)
+                    .disabled(model.simulatedCoordinate != nil || model.isPreparing ||
+                              model.isChangingSimulation || model.isCellularLaunchRunning)
+            } header: {
+                Text("位置校准")
+            } footer: {
+                Text("仅当大陆地图选点与系统地图位置出现固定偏移时尝试开启。先停止模拟，再更改。海外地点或开启后偏差变大时请关闭；此选项不是自动识别坐标系，不能保证米级精度。")
             }
 
             Section {

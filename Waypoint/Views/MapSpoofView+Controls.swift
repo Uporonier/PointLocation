@@ -27,6 +27,13 @@ extension MapSpoofView {
                 }
             }
 
+            if coordinateCorrection {
+                Label("大陆地图偏移修正已开启", systemImage: "scope")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             HStack(spacing: 10) {
                 Button {
                     if model.simulatedCoordinate != nil {

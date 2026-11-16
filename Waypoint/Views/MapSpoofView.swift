@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 struct MapSpoofView: View {
     @EnvironmentObject var model: AppModel
+    @AppStorage(MapCoordinateCorrection.preferenceKey) var coordinateCorrection = false
 
     @ObservedObject var pathMonitor = CellularPathMonitor.shared
     @StateObject var placeSearch = PlaceSearchController()

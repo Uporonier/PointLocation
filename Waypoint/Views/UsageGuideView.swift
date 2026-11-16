@@ -37,7 +37,7 @@ struct UsageGuideView: View {
                 Text("返回定点，点“停止模拟”，再在系统地图中确认真实位置。若停止失败，断开 LocalDevVPN 或重启手机后再次检查。")
             }
             Section("关于此版本") {
-                Text("0.1.2 · 选点版")
+                Text("0.1.3 · 选点版")
                 Text("基于 Waypoint 开源项目修改，保留 AGPL-3.0 许可证。主要界面为中文，底层诊断信息可能为英文。")
                     .font(.footnote)
                 Link("Waypoint 源项目与许可证", destination: URL(string: "https://github.com/raph559/WaypointApp")!)
