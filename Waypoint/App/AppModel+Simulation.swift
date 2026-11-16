@@ -4,6 +4,7 @@ import UIKit
 extension AppModel {
     func startSimulation(at coordinate: SelectedCoordinate) async {
         guard cellularLaunchOperationID == nil else { return }
+        guard !isChangingSimulation, !isPreparing else { return }
         guard coordinate.isValid else {
             presentError(title: "位置无效", message: "请在地图上选择有效位置。")
             return
@@ -38,6 +39,8 @@ extension AppModel {
         simulationSessionID = nil
 
         do {
+            markLocationRecoveryRequired()
+            bridge.resumeLocationWrites()
             try await bridge.setLocation(coordinate)
 
             if let previousSessionID {
@@ -75,45 +78,6 @@ extension AppModel {
                 presentError(title: "位置模拟失败", error: error)
             }
         }
-        isChangingSimulation = false
-    }
-
-    func stopSimulation() async {
-        guard cellularLaunchOperationID == nil else { return }
-        guard !isChangingSimulation else { return }
-
-        cancelCellularHandoffWork(resetState: true)
-        let sessionID = simulationSessionID
-        isChangingSimulation = true
-        isStoppingSimulation = true
-        simulationSessionID = nil
-        resendTask?.cancel()
-        resendTask = nil
-
-        if let sessionID {
-            SimulationNotificationMonitor.shared.endSession(sessionID)
-        }
-
-        var didConfirmStop = false
-
-        do {
-            try await bridge.clearLocation()
-            didConfirmStop = true
-        } catch {
-            invalidateConnectionReadiness()
-            presentError(
-                title: "无法确认已恢复真实定位",
-                message: "Waypoint lost the simulation connection. Disconnect LocalDevVPN or reboot if another app still reports the simulated point.\n\n\(error.localizedDescription)"
-            )
-        }
-
-        simulatedCoordinate = nil
-        BackgroundKeepAlive.shared.stop()
-        UIApplication.shared.isIdleTimerDisabled = false
-        if didConfirmStop {
-            publishSimulationEvent(.stopped)
-        }
-        isStoppingSimulation = false
         isChangingSimulation = false
     }
 
@@ -195,7 +159,7 @@ extension AppModel {
         } else {
             presentError(
                 title: "模拟连接已结束",
-                message: "The developer connection closed, so iOS may have returned to the real location.\n\n\(error.localizedDescription)"
+                message: "连接已断开，但系统可能仍然保留模拟位置。结束使用请点“恢复真实定位”；恢复失败时先连接 Wi-Fi 并开启 LocalDevVPN 后重试。\n\n\(error.localizedDescription)"
             )
         }
     }

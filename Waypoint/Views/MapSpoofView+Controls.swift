@@ -55,16 +55,30 @@ extension MapSpoofView {
                     model.isCellularLaunchRunning
                 )
 
-                if model.simulatedCoordinate != nil {
-                    Button(role: .destructive) {
-                        Task { await model.stopSimulation() }
-                    } label: {
-                        Label("停止模拟", systemImage: "location.slash.fill")
+            }
+
+            Button {
+                Task { await model.restoreRealLocation() }
+            } label: {
+                HStack(spacing: 8) {
+                    if model.isStoppingSimulation {
+                        ProgressView()
+                        Text("正在恢复真实定位…")
+                    } else {
+                        Label("恢复真实定位", systemImage: "location.circle.fill")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                    .disabled(model.isChangingSimulation || model.isCellularLaunchRunning)
                 }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .disabled(model.isChangingSimulation || model.isPreparing || model.isCellularLaunchRunning)
+
+            if model.needsLocationRecovery && model.simulatedCoordinate == nil {
+                Label("模拟位置尚未确认清除，请恢复真实定位。", systemImage: "exclamationmark.circle")
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             if model.simulatedCoordinate == nil {
@@ -73,6 +87,11 @@ extension MapSpoofView {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+
+            Text("结束使用前请点“恢复真实定位”。直接关闭 App 不会确保清除模拟位置。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             if model.simulatedCoordinate != nil {
                 cellularHandoffControl

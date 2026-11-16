@@ -107,6 +107,9 @@ extension AppModel {
                 // bridge.connect here would create a new socket that iOS rejects
                 // on a cellular-only path.
                 for probe in 1...3 {
+                    guard !Task.isCancelled,
+                          cellularHandoffOperationID == operationID,
+                          simulationSessionID == sessionID else { return }
                     guard CellularPathMonitor.shared.isCellularOnly(stableFor: 2) else {
                         cellularHandoffPathCheckFailed(
                             "The cellular-only path changed during verification. Keep Wi-Fi off and try the handoff again.",
@@ -117,6 +120,9 @@ extension AppModel {
                     }
 
                     try await bridge.setLocation(coordinate)
+                    guard !Task.isCancelled,
+                          cellularHandoffOperationID == operationID,
+                          simulationSessionID == sessionID else { return }
                     SimulationNotificationMonitor.shared.recordHeartbeat(for: sessionID)
 
                     guard CellularPathMonitor.shared.isCellularOnly() else {

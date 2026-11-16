@@ -9,10 +9,11 @@ extension AppModel {
         pairingState = PairingFileStore.exists ? .ready : .required
 
         if SimulationNotificationMonitor.shared.consumeStaleSessionMarker() {
+            markLocationRecoveryRequired()
             publishSimulationEvent(.connectionLost)
             presentError(
-                title: "Previous Spoof Session Ended",
-                message: "Waypoint was closed while spoofing. The developer connection is no longer being maintained, so verify your location before continuing."
+                title: "上次模拟未正常结束",
+                message: "关闭 App 不一定会清除系统里的模拟位置。请保持 LocalDevVPN 开启，点击首页“恢复真实定位”。如果连接已失效，请先连接 Wi-Fi 再恢复。"
             )
         }
 
@@ -138,6 +139,7 @@ extension AppModel {
               let sessionID = simulationSessionID else { return }
 
         Task {
+            guard !isChangingSimulation, simulationSessionID == sessionID else { return }
             do {
                 try await bridge.setLocation(coordinate)
                 guard simulationSessionID == sessionID else { return }

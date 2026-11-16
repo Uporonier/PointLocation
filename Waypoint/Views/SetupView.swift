@@ -67,7 +67,7 @@ struct SetupView: View {
                         }
                     }
                 }
-                .disabled(model.isPreparing || model.simulatedCoordinate != nil)
+                .disabled(model.isPreparing || model.isChangingSimulation || model.simulatedCoordinate != nil)
 
                 if !model.isLocalDevVPNInstalled {
                     Link(destination: localDevVPNAppStoreURL) {
@@ -123,7 +123,7 @@ struct SetupView: View {
                 Button("重置支持文件", role: .destructive) {
                     model.resetDeveloperImage()
                 }
-                .disabled(model.isPreparing || model.simulatedCoordinate != nil)
+                .disabled(model.isPreparing || model.isChangingSimulation || model.simulatedCoordinate != nil)
             } header: {
                 Text("故障排查")
             } footer: {

@@ -99,7 +99,7 @@ extension AppModel {
     }
 
     private var canAcceptPairingImport: Bool {
-        guard !isPreparing else { return false }
+        guard !isPreparing, !isChangingSimulation else { return false }
         guard cellularLaunchOperationID != nil else { return true }
         if case .needsPairing = cellularLaunchState { return true }
         return false

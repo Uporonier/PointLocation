@@ -18,7 +18,7 @@ struct SimulationEvent: Identifiable, Equatable {
         case .started: return "模拟已启动"
         case .moved: return "模拟位置已更新"
         case .cellularReady: return "已切换到移动数据"
-        case .stopped: return "模拟已停止"
+        case .stopped: return "恢复指令已发送"
         case .connectionLost: return "模拟连接已中断"
         }
     }
@@ -31,7 +31,7 @@ struct SimulationEvent: Identifiable, Equatable {
         switch kind {
         case .stopped: return "已发送恢复真实定位指令，请在地图中确认"
         case .cellularReady: return "移动数据连接检查已通过"
-        case .connectionLost: return "打开定点重新连接"
+        case .connectionLost: return "模拟位置可能保留，请恢复真实定位或重新连接"
         case .started, .moved: return "位置已更新"
         }
     }

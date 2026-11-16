@@ -2,7 +2,7 @@ import Foundation
 
 extension AppModel {
     func prepareDevice() async {
-        guard !isPreparing else { return }
+        guard !isPreparing, !isChangingSimulation else { return }
         guard cellularLaunchOperationID == nil else { return }
         guard simulatedCoordinate == nil else {
             presentError(title: "Spoof Is Active", message: "Stop spoofing before reconnecting or preparing the device.")
@@ -24,6 +24,7 @@ extension AppModel {
     func resetDeveloperImage() {
         guard simulatedCoordinate == nil,
               cellularLaunchOperationID == nil,
+              !isChangingSimulation,
               !isPreparing else { return }
         isPreparing = true
         Task {

@@ -11,6 +11,8 @@ final class AppModel: ObservableObject {
     @Published var preparationMessage = ""
     @Published var simulatedCoordinate: SelectedCoordinate?
     @Published var isChangingSimulation = false
+    @Published var isStoppingSimulation = false
+    @Published var needsLocationRecovery = false
     @Published var simulationEvent: SimulationEvent?
     @Published var cellularHandoffState: CellularHandoffState = .idle
     @Published var cellularLaunchState: CellularLaunchState = .idle
@@ -39,6 +41,7 @@ final class AppModel: ObservableObject {
 
     // Implementation-only access is module-internal so responsibility extensions can share one state machine.
     let bridge = DeviceBridge()
+    let recoveryStore = LocationRecoveryStore()
     private let feedbackGenerator = UINotificationFeedbackGenerator()
     var resendTask: Task<Void, Never>?
     var cellularHandoffTask: Task<Void, Never>?
@@ -47,7 +50,6 @@ final class AppModel: ObservableObject {
     var cellularLaunchOperationID: UUID?
     var pendingCellularCoordinate: SelectedCoordinate?
     var simulationSessionID: UUID?
-    var isStoppingSimulation = false
     var isApplicationActive = true
     var didLeaveForLocalDevVPN = false
     var pendingLaunchRoute: GuidedLaunchRoute?
@@ -59,6 +61,7 @@ final class AppModel: ObservableObject {
     static let pairingCallbackScheme = "pinpoint-pairing-a6d09e31"
 
     init() {
+        needsLocationRecovery = recoveryStore.isRequired
         if UserDefaults.standard.object(forKey: Self.keepAliveKey) == nil {
             UserDefaults.standard.set(true, forKey: Self.keepAliveKey)
         }

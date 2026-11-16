@@ -162,6 +162,8 @@ extension AppModel {
         resendTask?.cancel()
         resendTask = nil
 
+        markLocationRecoveryRequired()
+        bridge.resumeLocationWrites()
         try await bridge.setLocation(coordinate)
         try Task.checkCancellation()
 

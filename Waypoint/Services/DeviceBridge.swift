@@ -7,6 +7,7 @@ final class DeviceBridge: @unchecked Sendable {
     static let remotePairingPort: UInt16 = 49_152
 
     private let queue = DispatchQueue(label: "app.waypoint.device-bridge", qos: .userInitiated)
+    private let writeGate = LocationWriteGate()
 
     private var adapter: OpaquePointer?
     private var handshake: OpaquePointer?
@@ -39,11 +40,13 @@ final class DeviceBridge: @unchecked Sendable {
     }
 
     func setLocation(_ coordinate: SelectedCoordinate) async throws {
+        let ticket = try writeGate.ticket()
         let deviceCoordinate = MapCoordinateCorrection.deviceCoordinate(
             coordinate,
             enabled: UserDefaults.standard.bool(forKey: MapCoordinateCorrection.preferenceKey)
         )
         try await perform {
+            try self.writeGate.validate(ticket)
             guard coordinate.isValid else { throw DeviceBridgeError.invalidCoordinate }
             try self.requireTunnel()
             try self.ensureLocationClient()
@@ -82,6 +85,9 @@ final class DeviceBridge: @unchecked Sendable {
             }
         }
     }
+
+    func suspendLocationWrites() { writeGate.suspend() }
+    func resumeLocationWrites() { writeGate.resume() }
 
     func disconnect() async {
         await withCheckedContinuation { continuation in

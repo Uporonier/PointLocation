@@ -178,7 +178,7 @@ extension MapSpoofView {
                 guard !Task.isCancelled, searchOperationID == operationID else { return }
                 let status = model.simulatedCoordinate == nil
                     ? ""
-                    : "\n\n当前仍在模拟之前的位置。要结束模拟，请关闭提示后点击“停止模拟”。"
+                    : "\n\n当前仍在模拟之前的位置。要结束模拟，请关闭提示后点击“恢复真实定位”。"
                 model.presentError(title: "搜索失败", message: error.localizedDescription + status)
             }
         }

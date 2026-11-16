@@ -81,8 +81,8 @@ final class SimulationNotificationMonitor {
         pendingWatchdogIDs.insert(requestID)
 
         let content = UNMutableNotificationContent()
-        content.title = "Waypoint cannot confirm the spoof"
-        content.body = "The developer connection has not checked in. Your iPhone may be using its real location—open Waypoint to verify."
+        content.title = "无法确认模拟连接"
+        content.body = "模拟位置可能仍然保留。请打开定点检查；结束使用请点“恢复真实定位”。"
         content.sound = .default
 
         let trigger = UNTimeIntervalNotificationTrigger(
@@ -135,8 +135,8 @@ final class SimulationNotificationMonitor {
         guard shouldNotify, UIApplication.shared.applicationState != .active else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "Waypoint spoof stopped"
-        content.body = "The developer connection ended. Your iPhone may now be using its real location."
+        content.title = "模拟连接已中断"
+        content.body = "连接中断不代表位置已恢复。请打开定点，点击“恢复真实定位”。"
         content.sound = .default
 
         let requestID = "app.waypoint.simulation-ended.\(UUID().uuidString)"
